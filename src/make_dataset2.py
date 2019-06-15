@@ -3,7 +3,8 @@ import pickle
 import re
 import time
 from pathlib import Path
-from janome.tokenizer import Tokenizer
+
+import MeCab
 from tqdm import tqdm
 
 
@@ -24,21 +25,28 @@ def make_dataset():
         del texts
         gc.collect()
 
-    print(f'##### finish load and process text data {time.time() - s} sec #####')
+    print(f'##### finish load and process text data {s-time.time()} sec #####')
 
     return dataset
 
 
 def text2dataset(texts):
-    t = Tokenizer()
+    t = MeCab.Tagger('-Owakati')
+    t.parse('')
     dataset = []
     texts = re.sub(r"(.*?)", "", texts)
     texts = re.sub(r"<doc.*?>|</doc>", "", texts)
     texts = texts.replace("\n", "")
+    import pdb
+    pdb.set_trace()
     for sentence in tqdm(texts.split("。")):
         if len(sentence) == 0:
             continue
-        surface = [token.surface for token in t.tokenize(sentence)]
+        node = t.parseToNode(sentence)
+        surface = []
+        while node:
+            surface.append(node.surface)
+            node.next
         dataset.append(surface)
     return dataset
 

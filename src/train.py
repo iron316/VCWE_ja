@@ -1,9 +1,11 @@
+import gc
 import pickle
 import time
 from collections import Counter
 from pathlib import Path
 
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 import torch
 from fastprogress import master_bar, progress_bar
@@ -26,8 +28,11 @@ def main():
     char_dim = 200
     atten_hidden = 256
     dataset_path = Path("data/dataset.pkl")
+    embed_path = Path("result/embed.pkl")
 
     set_random_seed(2434)
+
+    print('##### load dataset #####')
 
     with dataset_path.open("rb") as rf:
         dataset = pickle.load(rf)
@@ -35,13 +40,19 @@ def main():
     for d in dataset:
         data_flatten.extend(d)
     word2freq = Counter(data_flatten)
-    word2idx = {w: i for i, w in enumerate(word2freq.keys())}
-    idx2word = {i: w for i, w in enumerate(word2freq.keys())}
-    idx2freq = {i: word2freq[w] for i, w in enumerate(word2freq.keys())}
+    unique_words = list(word2freq.keys())
+    unique_words.sort()
+    word2idx = {w: i for i, w in enumerate(unique_words)}
+    idx2word = {i: w for i, w in enumerate(unique_words)}
+    freq = np.array([word2freq[w] for w in unique_words])
+    n_vacab = len(unique_words)
 
-    n_vacab = len(word2idx)
+    del unique_words, word2freq, data_flatten
+    gc.collect()
 
-    dataset = Preprocess(dataset, word2idx, idx2word, idx2freq)
+    print('##### preprocess dataset #####')
+
+    dataset = Preprocess(dataset, word2idx, idx2word, freq, n_vacab)
 
     data_loader = torch.utils.data.DataLoader(
         dataset, batch_size, shuffle=True, collate_fn=max_pad, num_workers=4)
@@ -57,6 +68,8 @@ def main():
         s = time.time()
         epoch_loss = 0.0
         for pos_u, pos_v, pos_img, neg_v, neg_img in progress_bar(data_loader, parent=mb):
+            import pdb
+            pdb.set_trace()
             pos_u = pos_u.to(device)
             pos_v = pos_v.to(device)
             pos_img = pos_img.to(device)
@@ -77,7 +90,7 @@ def main():
     print("########## finish ##########")
 
     embed = model.u_embed.weight.cpu().numpy
-    with open("result/embed.pkl", "wb") as wf:
+    with embed_path.open("wb") as wf:
         pickle.dump(embed, wf)
 
 

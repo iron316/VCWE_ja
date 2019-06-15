@@ -3,6 +3,7 @@ import numpy as np
 
 
 def max_pad(batch):
+    print('start collete')
     bs = len(batch)
     idx = [i for i, _, _, _, _ in batch]
     idx = torch.LongTensor(idx)
@@ -26,4 +27,5 @@ def max_pad(batch):
     for i, img in enumerate(neg_img):
         neg_pad[i, :len(img)] = np.array(img)
 
+    print('end collete')
     return idx, pos_idx, pos_img, neg_idx, neg_img

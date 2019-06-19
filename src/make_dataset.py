@@ -32,13 +32,12 @@ def make_dataset():
 def text2dataset(texts):
     t = Tokenizer()
     dataset = []
-    texts = re.sub(r"(.*?)", "", texts)
     texts = re.sub(r"<doc.*?>|</doc>", "", texts)
     texts = texts.replace("\n", "")
     for sentence in tqdm(texts.split("。")):
         if len(sentence) == 0:
             continue
-        surface = [token.surface for token in t.tokenize(sentence)]
+        surface = [token.surface for token in t.tokenize(sentence) if len(token.surface) <= 10]
         dataset.append(surface)
     return dataset
 

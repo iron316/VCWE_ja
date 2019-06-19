@@ -5,19 +5,22 @@ from models.lstm_encoder import LSTMEncoder
 
 
 class VCWE(nn.Module):
-    def __init__(self, encode_dim, n_vocab, char_dim, atten_hidden, ):
+    def __init__(self, encode_dim, n_vocab, char_dim, atten_hidden, neg_size=5):
+        self.neg_size = neg_size
         super(VCWE, self).__init__()
         self.u_embed = nn.Embedding(n_vocab, encode_dim)
         self.v_embed = nn.Embedding(n_vocab, encode_dim)
-        self.lstm_encoder = LSTMEncoder(encode_dim, char_dim, atten_hidden)
+        self.lstm_encoder = LSTMEncoder(encode_dim, char_dim, atten_hidden, neg_size)
         self.sigmoid = nn.LogSigmoid()
 
     def forward(self, pos_u, pos_v, pos_img, neg_v, neg_img):
+        bs = pos_u.size(0)
         embed_u = self.u_embed(pos_u)
         embed_pos_v = self.v_embed(pos_v)
         img_pos = self.lstm_encoder(pos_img)
         embed_neg_v = self.v_embed(neg_v)
         img_neg = self.lstm_encoder(neg_img)
+        img_neg = img_neg.view(bs, self.neg_size, -1)
 
         score = torch.sum(torch.mul(embed_u, embed_pos_v), dim=1)
         score = -self.sigmoid(score)

@@ -5,10 +5,10 @@ from models.img_encoder import ImgEncoder
 
 
 class LSTMEncoder(nn.Module):
-    def __init__(self, encode_dim, char_dim, atten_hidden):
+    def __init__(self, encode_dim, char_dim, atten_hidden, neg_size):
         self.encode_dim = encode_dim
         super(LSTMEncoder, self).__init__()
-        self.img_encoder = ImgEncoder(char_dim)
+        self.img_encoder = ImgEncoder(char_dim, neg_size)
         self.lstm = nn.LSTM(char_dim, int(encode_dim / 2),
                             bidirectional=True, batch_first=True)
         self.atten1 = nn.Linear(encode_dim, atten_hidden)

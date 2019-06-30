@@ -14,6 +14,7 @@ from models.vcwe import VCWE
 from utils.collate import MaxPad
 from utils.preprocess import Preprocess
 from utils.seed import set_random_seed
+from utils.img_trans import make_char2img
 
 plt.switch_backend('agg')
 
@@ -22,11 +23,11 @@ def main():
 
     device = torch.device('cuda:0')
     lr = 0.001
-    max_epoch = 1
-    batch_size = 16
-    encode_dim = 200
-    char_dim = 200
-    atten_hidden = 256
+    max_epoch = 100
+    batch_size = 64
+    encode_dim = 100
+    char_dim = 100
+    atten_hidden = 128
     dataset_path = Path("data/dataset.pkl")
     result_path = Path("result")
 
@@ -47,17 +48,19 @@ def main():
     freq = np.array([word2freq[w] for w in unique_words])
     n_vocab = len(unique_words)
 
+    char2img = make_char2img(unique_words)
+
     del unique_words, word2freq, data_flatten
     gc.collect()
 
     print('##### preprocess dataset #####')
     print(f'dataset size is {len(dataset)}\nvocaburaly size is {n_vocab}')
 
-    dataset = Preprocess(dataset, word2idx, idx2word, freq, n_vocab)
+    dataset = Preprocess(dataset, word2idx, idx2word, char2img, freq, n_vocab)
     collate_func = MaxPad()
 
     data_loader = torch.utils.data.DataLoader(
-        dataset, batch_size, shuffle=True, collate_fn=collate_func, num_workers=4)
+        dataset, batch_size, shuffle=True, collate_fn=collate_func, num_workers=0)
 
     model = VCWE(encode_dim, n_vocab, char_dim, atten_hidden).to(device)
 
@@ -81,8 +84,7 @@ def main():
             loss.backward()
             optimizer.step()
 
-            epoch_loss += loss.items() / len(data_loader)
-            print('end iter')
+            epoch_loss += loss.data.cpu() / len(data_loader)
         elapsed_time = time.time() - s
         message = f'epoch {epoch+1}/{max_epoch} loss : {epoch_loss} time {elapsed_time} sec'
         mb.write(message)

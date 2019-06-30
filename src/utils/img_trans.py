@@ -7,10 +7,10 @@ FONT = ImageFont.truetype(
     font=FONT_NAME, size=int(FONT_SIZE * 0.85), encoding="utf-8")
 
 
-def trans_to_img(word):
-    imgs = [char_to_img(c) for c in word]
-    imgs = np.array([resize_img(img) for img in imgs])
-    return normlize(imgs).astype(np.float32)
+def make_char2img(words):
+    chars = list(set(''.join(words)))
+    char2img = {c: normlize(resize_img(char_to_img((c)))) for c in chars}
+    return char2img
 
 
 def char_to_img(char):
